@@ -7,11 +7,15 @@ import com.user.business.service.request.ServiceAddRequest;
 import com.user.business.service.request.ServiceUpdateRequest;
 import com.user.business.service.service.ServiceService;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @RequestMapping("/service")
 public class ServiceController {
@@ -50,6 +54,22 @@ public class ServiceController {
         Long userId = jwtUtil.extractUserId(bearerToken);
         serviceService.removeService(serviceId, userId);
         ApiResponse<Void> response = new ApiResponse<>("SUCCESS",200,"Account Marked as REMOVED",null);
+        return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping("/get")
+    public ResponseEntity<ApiResponse<List<ServiceEntity>>> getServices(
+            @RequestHeader("Authorization") String bearerToken) {
+
+        Long userId = jwtUtil.extractUserId(bearerToken);
+        log.info(String.valueOf(userId));
+
+        List<ServiceEntity> services = serviceService.getServices(userId);
+        log.info("ServiceEntity data : {}"+services);
+
+        ApiResponse<List<ServiceEntity>> response =
+                new ApiResponse<>("SUCCESS", 200, "Service List Fetched Successfully", services);
+
         return ResponseEntity.ok(response);
     }
 }

@@ -1,5 +1,7 @@
 package com.user.business.service.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 import com.user.business.service.entity.ServiceEntity;
@@ -12,5 +14,6 @@ public interface ServiceService {
 	ServiceEntity updateService(ServiceUpdateRequest request, Long userId);
 	void removeService(Long serviceId, Long userId);
 
+	List<ServiceEntity> getServices(Long userId);
 	
 }

@@ -1,17 +1,36 @@
 package com.user.business.request.socialmedai;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 @Data
 public class SocialMediaUpdateRequest {
 
-    @NotNull(message = "id is required")
+	@NotNull(message = "id is required")
     private Integer id;
-    private String account;
+
+    @Pattern(
+        regexp = "YOUTUBE|INSTA|FACEBOOK|TWITTER",
+        message = "account must be YOUTUBE, INSTA, FACEBOOK or TWITTER"
+    )
+    private String accountType;
+
+    @Pattern(
+        regexp = "^(https?:\\/\\/)?(www\\.)?"
+               + "(youtube\\.com|youtu\\.be|instagram\\.com|facebook\\.com|x\\.com|twitter\\.com)\\/.+$",
+        message = "Invalid social media link"
+    )
     private String link;
+
+    @Min(value = 10, message = "followers must be at least 10")
     private Long followers;
+
+    @Min(value = 10, message = "totalViews must be at least 10")
     private Long totalViews;
+
     private Long totalPosts;
     private Long totalLikes;
 }
+

@@ -2,6 +2,7 @@ package com.user.business.controller.socialmedia;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -37,6 +38,16 @@ public class SocialMediaController {
     }
 
 
+//    @PutMapping("/update")
+//    public ResponseEntity<ApiResponse<?>> updateSocial(
+//            @Valid @RequestBody SocialMediaUpdateRequest request,
+//            @RequestHeader("Authorization") String token) {
+//
+//        SocialMedia data = service.updateSocialMedia(token ,request);
+//        
+//        return ResponseEntity.ok(new ApiResponse<>("SUCCESS", 200, "Record Updated Successfully", data));
+//    }
+
     @PutMapping("/update")
     public ResponseEntity<ApiResponse<?>> updateSocial(
             @Valid @RequestBody SocialMediaUpdateRequest request) {
@@ -50,5 +61,12 @@ public class SocialMediaController {
 
         service.removeSocialMedia(id);
         return ResponseEntity.ok(new ApiResponse<>("SUCCESS", 200, "Account Marked as REMOVED", null));
+    }
+    
+    @GetMapping("/get")
+    public ApiResponse<?> getSocialMedia(
+            @RequestHeader("Authorization") String token) {
+
+        return service.getSocialMediaByUserId(token);
     }
 }

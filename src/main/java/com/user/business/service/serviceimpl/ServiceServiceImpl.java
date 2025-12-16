@@ -1,6 +1,7 @@
 package com.user.business.service.serviceimpl;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -72,5 +73,11 @@ public class ServiceServiceImpl implements ServiceService {
 
         repository.save(service);
     }
+    
+    @Override
+    public List<ServiceEntity> getServices(Long userId) {
+        return repository.findByUserId(userId);
+    }
+
 }
 

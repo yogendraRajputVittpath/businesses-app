@@ -1,6 +1,7 @@
 
 package com.user.business.repository.socialmedia;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,4 +16,6 @@ public interface SocialMediaRepository extends JpaRepository<SocialMedia, Intege
 //	    boolean existsByAccountIgnoreCase(String account);
 //    Optional<SocialMedia> findByUserIdAndAccountIgnoreCase(Integer userId, String account);
 
+//	Optional<List<SocialMedia>> findByUserId(Long userId);
+    List<SocialMedia> findByUserId(Long userId);
 }
