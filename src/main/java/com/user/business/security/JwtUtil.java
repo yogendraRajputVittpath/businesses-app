@@ -98,6 +98,7 @@ public class JwtUtil {
 
     public String extractEmail(String token) {
     	log.info("Extrect Email from Token...");
+    	
         return Jwts.parserBuilder()
         		.setSigningKey(key)
         		.build()
