@@ -20,8 +20,8 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+//    private string
 
-    // Personal details
     @Column(length = 50, nullable = false)
     private String firstName;
 
@@ -31,8 +31,9 @@ public class User {
     @Column(length = 100, nullable = false, unique = true)
     private String email;
 
+    @Column(nullable = true)
     @JsonIgnore
-    @Column(nullable = false)
+//    @Column(nullable = false)
     private String password;
 
     private LocalDate dob;
@@ -50,10 +51,6 @@ public class User {
     @Column(length = 6)
     private String pincode;
 
-
-    // --------------------------
-    // ⭐ Added Business Fields
-    // --------------------------
     private String businessName;
     private String userName;
     private String website;
@@ -91,12 +88,18 @@ public class User {
 
     private String profilePic;
 
-
-    // ⭐ Status should be string or Enum (your choice)
     @Column(nullable = false)
     private String status;  // VerificationPending / Verified / Active / Disabled
+    
+    @Column(length = 255)
+    private String statusMessage;
 
-    @Column(nullable = false)
+//    @Column(nullable = false)
+    @Column(nullable = true)
     private String gender; // MALE/FEMALE/OTHER
+    
+    private Integer loginFailedRetries = 0;
+    
+    private boolean emailNotificationEnabled = true;
 }
 

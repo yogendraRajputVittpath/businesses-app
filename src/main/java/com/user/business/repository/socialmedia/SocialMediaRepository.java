@@ -1,4 +1,3 @@
-
 package com.user.business.repository.socialmedia;
 
 import java.util.List;
@@ -11,11 +10,10 @@ import com.user.business.entity.socialmedia.SocialMedia;
 
 @Repository
 public interface SocialMediaRepository extends JpaRepository<SocialMedia, Integer> {
+	
+	 boolean existsByUserIdAndAccountIgnoreCaseAndStatus(Integer userId,String account,String status);
 
     boolean existsByUserIdAndAccountIgnoreCase(Integer userId, String account);
-//	    boolean existsByAccountIgnoreCase(String account);
-//    Optional<SocialMedia> findByUserIdAndAccountIgnoreCase(Integer userId, String account);
 
-//	Optional<List<SocialMedia>> findByUserId(Long userId);
     List<SocialMedia> findByUserId(Long userId);
 }

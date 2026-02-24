@@ -39,7 +39,7 @@ public class SecurityConfig {
             		
                 // Users endpoints
                 .requestMatchers(
-                    "/api/users/register",
+                    "/api/users/register/**",
                     "/api/users/login",
                     "/api/users/send-otp",
                     "/api/users/verify-otp",

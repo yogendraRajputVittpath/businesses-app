@@ -9,4 +9,10 @@ public class ServiceConstants {
     // Status values
     public static final String ACTIVE = "ACTIVE";
     public static final String REMOVED = "REMOVED";
+    
+ // Social media account types
+    public static final String YOUTUBE = "YOUTUBE";
+    public static final String INSTA = "INSTA";
+    public static final String FACEBOOK = "FACEBOOK";
+    public static final String TWITTER = "TWITTER";
 }

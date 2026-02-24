@@ -16,11 +16,15 @@ import com.user.business.request.FilterProfileRequest;
 import com.user.business.request.ForgotPasswordRequest;
 import com.user.business.request.LoginRequest;
 import com.user.business.request.ProfilePicRequest;
-import com.user.business.request.RegisterUserRequest;
+import com.user.business.request.RegisterUserRequestOne;
+import com.user.business.request.RegisterUserRequestTwo;
+//import com.user.business.request.RegisterUserRequest;
 import com.user.business.request.UpdatePasswordRequest;
 import com.user.business.request.VerifyOtpRequest;
 import com.user.business.response.ApiResponse;
 import com.user.business.service.UserService;
+//import com.user.details.request.RegisterUserRequestOne;
+//import com.user.details.request.RegisterUserRequestTwo;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,10 +37,20 @@ import lombok.extern.slf4j.Slf4j;
 public class UserController {
 
     private final UserService userService;
+//
+//    @PostMapping("/register")
+//    public ResponseEntity<ApiResponse<?>> register(@Valid @RequestBody RegisterUserRequest request) {
+//        return ResponseEntity.ok(userService.registerUser(request));
+//    }
+    
+    @PostMapping("/register/one")
+    public ResponseEntity<ApiResponse<?>> registerOne(@Valid @RequestBody RegisterUserRequestOne request) {
+        return ResponseEntity.ok(userService.registerUserOne(request));
+    }
 
-    @PostMapping("/register")
-    public ResponseEntity<ApiResponse<?>> register(@Valid @RequestBody RegisterUserRequest request) {
-        return ResponseEntity.ok(userService.registerUser(request));
+    @PostMapping("/register/two")
+    public ResponseEntity<ApiResponse<?>> registerTwo(@Valid @RequestBody RegisterUserRequestTwo request) {
+        return ResponseEntity.ok(userService.registerUserTwo(request));
     }
 
     @PostMapping("/login")
@@ -101,6 +115,23 @@ public class UserController {
             @RequestBody FilterProfileRequest request) {
 
         return userService.filterProfiles(token, request);
+    }
+    
+    @PostMapping(value = "/profile-pic", consumes = "multipart/form-data")
+    public ResponseEntity<ApiResponse<?>> updateProfilePic(
+            @RequestHeader("Authorization") String authHeader,
+            @Valid @ModelAttribute ProfilePicRequest request) {
+
+        log.info("Token : {}, ProfilePicRequest : {}", authHeader, request);
+        return ResponseEntity.ok(userService.updateProfilePic(authHeader, request));
+    }
+
+    @GetMapping("/profile-pic")
+    public ResponseEntity<ApiResponse<?>> getProfilePic(
+            @RequestHeader("Authorization") String bearerToken) {
+
+        log.info("Fetching profile pic for token: {}", bearerToken);
+        return ResponseEntity.ok(userService.getProfilePic(bearerToken));
     }
 
     

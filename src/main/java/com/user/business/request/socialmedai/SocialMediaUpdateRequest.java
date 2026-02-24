@@ -1,6 +1,7 @@
 package com.user.business.request.socialmedai;
 
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
@@ -11,12 +12,14 @@ public class SocialMediaUpdateRequest {
 	@NotNull(message = "id is required")
     private Integer id;
 
+	@NotBlank(message = "account is required (YOUTUBE/INSTA/FACEBOOK/TWITTER)")
     @Pattern(
         regexp = "YOUTUBE|INSTA|FACEBOOK|TWITTER",
         message = "account must be YOUTUBE, INSTA, FACEBOOK or TWITTER"
     )
     private String accountType;
 
+    @NotBlank(message = "link is required")
     @Pattern(
         regexp = "^(https?:\\/\\/)?(www\\.)?"
                + "(youtube\\.com|youtu\\.be|instagram\\.com|facebook\\.com|x\\.com|twitter\\.com)\\/.+$",

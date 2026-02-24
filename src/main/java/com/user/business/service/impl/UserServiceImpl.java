@@ -40,11 +40,12 @@ import com.user.business.service.EmailService;
 import com.user.business.service.OTPGenerator;
 import com.user.business.service.UserService;
 import com.user.business.service.util.Constants;
+//import com.user.details.request.RegisterUserRequestOne;
+//import com.user.details.request.RegisterUserRequestTwo;
 import com.user.business.request.EmailOtpRequest;
 import com.user.business.request.FilterProfileRequest;
 import com.user.business.request.ForgotPasswordRequest;
 import com.user.business.request.LoginRequest;
-import com.user.business.request.RegisterUserRequest;
 import com.user.business.request.UpdatePasswordRequest;
 import com.user.business.request.VerifyOtpRequest;
 
@@ -52,6 +53,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 
 import java.awt.PageAttributes.MediaType;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -81,6 +83,7 @@ public class UserServiceImpl implements UserService {
     private final JwtUtil jwtUtil;
     private final EmailService emailService;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final UploadingImage uploadingImage;
 
     private static Long phoneNumber;
 
@@ -92,59 +95,101 @@ public class UserServiceImpl implements UserService {
 
     @Value("${token.expiary.time.hours}")
     private int expiaryTime;
-
+    
+    @Value("${file.upload-dir}")
+    private String uploadDir;
+    
     @Override
-    public ApiResponse<?> registerUser(RegisterUserRequest request) {
+    public ApiResponse<?> registerUserOne(RegisterUserRequestOne request) {
         try {
-            log.info(":: User Registration Started for request {} ", request);
-            LocalDate dob = request.getDob();
-            if (dob.isAfter(LocalDate.now().minusYears(10))) {
-                return new ApiResponse<>("FAILURE",400,"User must be at least 10 years old",null);
-            }
+            log.info(":: [Step 1] Registration started for Email: {} and Phone: {}", request.getEmail(), request.getPhoneNo());
+
+            User user;
             Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
+
             if (existingUser.isPresent()) {
-                User user = existingUser.get();
-                if (UserStatus.VERIFICATION_PENDING.name().equals(user.getStatus())) {
-                    log.error("Status of this user is already VerificationPending, Please complete verification");
-                    return new ApiResponse<>(HttpStatus.BAD_REQUEST.name(),400,"Status of this user is already VerificationPending, Please complete verification",
-                            RegistrationResponse.builder().userStatus(UserStatus.VERIFICATION_PENDING.name()).userId(existingUser.get().getId()).build());
-                } else {
-                    log.error("This EMail is already Registered. Please login !!");
-                    return new ApiResponse<>(HttpStatus.BAD_REQUEST.name(),400,"This EMail is already Registered. Please login !!",
-                            RegistrationResponse.builder().userStatus(user.getStatus()).userId(existingUser.get().getId()).build());
+                user = existingUser.get();
+                log.warn(":: User already exists with Status: {}", user.getStatus());
+
+                if (UserStatus.ACTIVE.name().equals(user.getStatus())) {
+                    log.error(":: User is already ACTIVE. Redirecting to Login.");
+                    return new ApiResponse<>("FAILURE", 400, "Email already registered. Please login.", null);
                 }
-            }
-            // Encode password
-            String encodedPassword = request.getPassword();
-            log.info("Password which going to save : {}", encodedPassword);
-            if (encryptPasswordEnable) {
-                log.info("Password encryption ENABLED for email: {}", request.getEmail());
-                encodedPassword = passwordEncoder.encode(encodedPassword);
-                log.info("Password encrypted before saving for email: {}", request.getEmail());
+                
+                log.info(":: Updating existing user details for Step 1");
+                user.setFirstName(request.getFirstName());
+                user.setLastName(request.getLastName());
+                user.setPhoneNo(Long.parseLong(request.getPhoneNo()));
             } else {
-                log.warn("Password encryption DISABLED, saving plain password for email: {}", request.getEmail());
+                log.info(":: Creating new user for Step 1");
+                user = User.builder()
+                        .firstName(request.getFirstName())
+                        .lastName(request.getLastName())
+                        .email(request.getEmail())
+                        .phoneNo(Long.parseLong(request.getPhoneNo()))
+                        .emailNotificationEnabled(true)
+                        .build();
             }
-            User user = User.builder()
-                    .firstName(request.getFirstName())
-                    .lastName(request.getLastName())
-                    .email(request.getEmail())
-                    .phoneNo(Long.parseLong(request.getPhoneNo()))
-                    .dob(dob)
-                    .gender(request.getGender())
-                    .password(encodedPassword)
-                    .status(UserStatus.VERIFICATION_PENDING.name())
-                    .build();
 
-            userRepository.save(user);
-
-            log.info(":: User Registered Successfully {} ", user);
-            return new ApiResponse<>("SUCCESS",200,"User Registered Successfully.",user);
+            user.setStatus(UserStatus.VERIFICATION_PENDING.name());
+            User savedUser = userRepository.save(user);
+            
+            log.info(":: [Step 1] Success. User ID: {} saved with Status: {}", savedUser.getId(), savedUser.getStatus());
+            return new ApiResponse<>("SUCCESS", 200, "User Registered Successfully.", savedUser);
 
         } catch (Exception e) {
-            log.error("Registration Failure... ", e);
-            return new ApiResponse<>("FAILURE",400,"Something went wrong",null);
+            log.error(":: [Step 1] Critical Failure: ", e);
+            return new ApiResponse<>("FAILURE", 400, "Something went wrong in Step 1", null);
         }
     }
+    
+    
+    
+    @Override
+    public ApiResponse<?> registerUserTwo(RegisterUserRequestTwo request) {
+        try {
+            log.info(":: [Step 2] Continuing registration for Email: {}", request.getEmail());
+
+            // 1. Fetch User
+            User user = userRepository.findByEmail(request.getEmail())
+                    .orElseThrow(() -> {
+                        log.error(":: [Step 2] User not found for Email: {}", request.getEmail());
+                        return new RuntimeException("Invalid Registration Stage. Please complete Step 1.");
+                    });
+
+            // 2. Password Processing
+            String rawPassword = request.getPassword();
+            String passwordToSave;
+            
+            if (encryptPasswordEnable) {
+                log.info(":: Encrypting password for user: {}", request.getEmail());
+                passwordToSave = passwordEncoder.encode(rawPassword);
+            } else {
+                log.warn(":: Encryption DISABLED. Saving plain text password for: {}", request.getEmail());
+                passwordToSave = rawPassword;
+            }
+
+            // 3. Data Mapping
+            user.setPassword(passwordToSave);
+            user.setDob(request.getDob());
+            user.setGender(request.getGender()); // Request mein null hoga toh DB mein bhi null jayega
+            user.setStatus(UserStatus.VERIFICATION_PENDING.name()); // Status abhi bhi pending rahega
+
+            log.info(":: Updating User fields (DOB: {}, Gender: {})", user.getDob(), user.getGender());
+
+            // 4. Final Save
+            User fullyUpdatedUser = userRepository.save(user);
+            log.info(":: [Step 2] Database updated successfully for User ID: {}", fullyUpdatedUser.getId());
+
+
+            return new ApiResponse<>("SUCCESS", 200, "Registration Step 2 Complete.", fullyUpdatedUser);
+
+        } catch (Exception e) {
+            log.error(":: [Step 2] Critical Failure: ", e);
+            return new ApiResponse<>("FAILURE", 400, e.getMessage(), null);
+        }
+    }
+    
 
     @Override
     public ApiResponse<?> sendEmailOtp(EmailOtpRequest request) {
@@ -285,56 +330,68 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ApiResponse<?> loginUser(LoginRequest request) {
-        if (request.getEmail() == null || request.getPassword() == null || request.getPassword().isBlank()) {
-            log.error("Email and Password must not be empty...");
-            return new ApiResponse<>(Constants.FAILURE,400,Constants.Incomplete_Information,null);
+        if (ObjectUtils.isEmpty(request.getEmail()) || ObjectUtils.isEmpty(request.getPassword())) {
+            return new ApiResponse<>(Constants.FAILURE, 400, Constants.Incomplete_Information, null);
         }
 
         Optional<User> optionalUser = userRepository.findByEmail(request.getEmail());
-        log.info("From Optional_User" + optionalUser.toString());
         if (optionalUser.isEmpty()) {
-            log.error("User Not found with Email : " + request.getEmail());
-            return new ApiResponse<>(Constants.FAILURE,400,Constants.USER_NOT_FOUND,null);
+            return new ApiResponse<>(Constants.FAILURE, 400, Constants.USER_NOT_FOUND, null);
         }
 
         User user = optionalUser.get();
-        if (optionalUser.get().getStatus().equals(UserStatus.VERIFICATION_PENDING.name())) {
-            optionalUser = null;
-            return new ApiResponse<>(Constants.FAILURE,400,Constants.User_Not_Verified,null);
-        }
-        log.info(optionalUser.get().getFirstName());
-        if (!user.getStatus().equals(UserStatus.ACTIVE.name()) && !user.getStatus().equals(UserStatus.DISABLED.name())) {
-            log.error("Login not allowed, email {} has status {}", request.getEmail(), user.getStatus());
-            return new ApiResponse<>(Constants.FAILURE,400,"Account_Not_Verified",null);
-        }
-        if (encryptPasswordEnable) {
-            if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-                log.error("Invalid password for Email {}", request.getEmail());
-                return new ApiResponse<>(Constants.FAILURE,400,Constants.INVALID_Details,null);
-            }
-        } else {
-            if (!request.getPassword().equals(user.getPassword())) {
-                log.error("Invalid password for email {}", request.getEmail());
-                return new ApiResponse<>(Constants.FAILURE,400,Constants.INVALID_Details,null);
-            }
+
+        if ("VerificationPending".equalsIgnoreCase(user.getStatus())) {
+            return new ApiResponse<>(Constants.FAILURE, 400, "Please complete Step 2 of registration first.", 
+                RegistrationResponse.builder()
+                    .userStatus("VerificationPending")
+                    .userId(user.getId())
+                    .build());
         }
 
-        String token = jwtUtil.generateToken(user.getEmail(), user.getId());
-        log.info("JWT Token generated successfully for email {}", request.getEmail());
+        boolean isPasswordMatch = encryptPasswordEnable 
+            ? passwordEncoder.matches(request.getPassword(), user.getPassword())
+            : request.getPassword().equals(user.getPassword());
 
-        UserToken userToken = UserToken.builder()
-                .token(token)
-                .user(user)
-                .expiryTime(LocalDateTime.now().plusHours(expiaryTime))
-                .build();
+        if (!isPasswordMatch) {
+            handleLoginFailed(user); // Retries increment logic
+            return new ApiResponse<>(Constants.FAILURE, 400, Constants.INVALID_Details, 
+                RegistrationResponse.builder().invalidAttempts(user.getLoginFailedRetries()).build());
+        }
 
-        userTokenRepository.save(userToken);
-        log.info("Token saved in DB for email {}", request.getEmail());
+        if ("DISABLED".equalsIgnoreCase(user.getStatus())) {
+            return new ApiResponse<>(Constants.FAILURE, 403, "Account is disabled. Contact Admin.", null);
+        }
 
-        return new ApiResponse<>(Constants.SUCCESS,200,"Logged In Successfully",
-                TokenResponse.builder().token("Bearer " + token).userId(user.getId()).build());
+        try {
+            String token = jwtUtil.generateToken(user.getEmail(), user.getId());
+            
+            user.setLoginFailedRetries(0);
+            user.setLastLogin(LocalDateTime.now());
+            userRepository.save(user);
+
+            UserToken userToken = UserToken.builder()
+                    .token(token)
+                    .user(user)
+                    .expiryTime(LocalDateTime.now().plusHours(expiaryTime)) // Ensure expiaryTime is defined
+                    .build();
+            userTokenRepository.save(userToken);
+
+            log.info("User {} logged in successfully", user.getEmail());
+            
+            return new ApiResponse<>(Constants.SUCCESS, 200, "Logged In Successfully", 
+                TokenResponse.builder()
+                    .token("Bearer " + token)
+                    .userId(user.getId())
+                    .build());
+
+        } catch (Exception e) {
+            log.error("Token generation failed", e);
+            return new ApiResponse<>(Constants.FAILURE, 500, "Internal Server Error during login", null);
+        }
     }
 
+    
     @Override
     @Transactional
     public ApiResponse<?> logoutUser(String bearerToken) {
@@ -560,6 +617,169 @@ public class UserServiceImpl implements UserService {
     }
     
     @Override
+    public ApiResponse<?> updateProfilePic(String authHeader, ProfilePicRequest request) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return new ApiResponse<>(Constants.FAILURE,400,"Invalid Authorization header",null);
+            }
+
+            String token = authHeader.substring(7);
+            log.info("Token : {}", token);
+
+            String email = jwtUtil.extractEmail(token);
+            log.info("Email from Token : {}", email);
+
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new FileStorageException("User not found"));
+            log.info("User from UserRepo : {}", user);
+
+            MultipartFile file = request.getProfilePic();
+            log.info("Image from Request : {}", file);
+
+            if (file == null || file.isEmpty()) {
+                log.info("File is empty : {}", file);
+                return new ApiResponse<>(Constants.FAILURE,400,"Profile picture file is missing",null);
+            }
+
+            String uploadedFileName = uploadingImage.uploadProfilePic(user, file);
+            log.info("After image upload to db : {}", uploadedFileName);
+
+            log.error("Profile picture updated successfully...");
+            return new ApiResponse<>(Constants.SUCCESS,200,"Profile picture updated successfully",uploadedFileName);
+
+        } catch (FileStorageException e) {
+            log.error("Profile picture update failed: {}", e.getMessage());
+            return new ApiResponse<>(Constants.FAILURE,400,e.getMessage(),null);
+
+        } catch (Exception e) {
+            log.error("Unexpected error while updating profile picture", e);
+            return new ApiResponse<>(Constants.FAILURE,500,"Something went wrong while updating profile picture",null);
+        }
+    }
+    
+//    @Override
+//    public ApiResponse<byte[]> getProfilePic(String bearerToken) {
+//        try {
+//            if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
+//                return new ApiResponse<>("FAILURE", 400, "Invalid Authorization header", null);
+//            }
+//
+//            String token = bearerToken.substring(7);
+//            String email = jwtUtil.extractEmail(token);
+//
+//            Optional<User> userOpt = userRepository.findByEmail(email);
+//            if (userOpt.isEmpty()) {
+//                return new ApiResponse<>("FAILURE", 404, "User not found", null);
+//            }
+//
+//            User user = userOpt.get();
+//
+//            if (user.getProfilePic() == null || user.getProfilePic().isEmpty()) {
+//                return new ApiResponse<>("FAILURE", 404, "Profile picture not found", null);
+//            }
+//
+//            String filename = user.getProfilePic();
+//            if (filename.contains("resources/")) {
+//                filename = filename.substring(filename.indexOf("resources/") + "resources/".length());
+//            }
+//
+//            log.info("Path after resources folder: {}", filename);
+//
+//            ClassPathResource imgFile = new ClassPathResource(filename);
+//            if (!imgFile.exists()) {
+//                return new ApiResponse<>("FAILURE", 404, "Profile image file not found on server", null);
+//            }
+//
+//            try (InputStream in = imgFile.getInputStream()) {
+//                byte[] imageBytes = in.readAllBytes();
+//                return new ApiResponse<>("SUCCESS", 200, "Profile picture fetched successfully", imageBytes);
+//            }
+//
+//        } catch (Exception e) {
+//            log.error("Error fetching profile picture: {}", e.getMessage(), e);
+//            return new ApiResponse<>("FAILURE", 500, "Something went wrong while fetching profile picture", null);
+//        }
+//    }
+    
+    @Override
+    public ApiResponse<byte[]> getProfilePic(String bearerToken) {
+
+        try {
+            String token = bearerToken.substring(7);
+            String email = jwtUtil.extractEmail(token);
+
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            String fileName = user.getProfilePic();
+
+            if (fileName == null) {
+                return new ApiResponse<>("FAILURE", 404, "Profile pic not found", null);
+            }
+
+            Path filePath = Paths.get(uploadDir)
+                    .resolve(fileName)
+                    .normalize()
+                    .toAbsolutePath();
+
+            log.info("Reading image from path: {}", filePath);
+
+            if (!Files.exists(filePath)) {
+                return new ApiResponse<>("FAILURE", 404, "Image file not found", null);
+            }
+
+            byte[] imageBytes = Files.readAllBytes(filePath);
+
+            return new ApiResponse<>("SUCCESS", 200,
+                    "Profile pic fetched successfully",
+                    imageBytes);
+
+        } catch (Exception e) {
+            log.error("Error fetching profile picture", e);
+            return new ApiResponse<>("FAILURE", 500,
+                    "Error fetching image",
+                    null);
+        }
+    }
+    
+
+//    @Override
+//    public ApiResponse<byte[]> getProfilePic(String bearerToken) {
+//
+//        try {
+//            if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
+//                return new ApiResponse<>("FAILURE", 400, "Invalid token", null);
+//            }
+//
+//            String token = bearerToken.substring(7);
+//            String email = jwtUtil.extractEmail(token);
+//
+//            User user = userRepository.findByEmail(email)
+//                    .orElseThrow(() -> new RuntimeException("User not found"));
+//
+//            if (user.getProfilePic() == null) {
+//                return new ApiResponse<>("FAILURE", 404, "Profile pic not found", null);
+//            }
+//
+//            Path filePath = Paths.get(uploadDir).resolve(user.getProfilePic()).normalize();
+//
+//            log.info("Final File Path: {}", filePath.toAbsolutePath());
+//
+//            if (!Files.exists(filePath)) {
+//                return new ApiResponse<>("FAILURE", 404, "Image file not found", null);
+//            }
+//
+//            byte[] imageBytes = Files.readAllBytes(filePath);
+//
+//            return new ApiResponse<>("SUCCESS", 200, "Profile pic fetched", imageBytes);
+//
+//        } catch (Exception e) {
+//            log.error("Error fetching profile pic", e);
+//            return new ApiResponse<>("FAILURE", 500, "Error fetching image", null);
+//        }
+//    }
+    
+    @Override
     public ApiResponse<?> filterProfiles(String token, FilterProfileRequest request) {
         log.info("Filter Request Received: {}", request);
 
@@ -623,8 +843,23 @@ public class UserServiceImpl implements UserService {
         } catch (Exception e) {
             log.error("Error Filtering Profiles: ", e);
             return new ApiResponse<>( "FAILURE",500,"Something Went Wrong...",null);
+            
+            
         }
     }
+    
+    private void handleLoginFailed(User user) {
+		if(ObjectUtils.isEmpty(user.getLoginFailedRetries())) {
+			user.setLoginFailedRetries(0);
+			user.setStatusMessage("");
+		}
+		user.setLoginFailedRetries(user.getLoginFailedRetries()+1);
+		if(user.getLoginFailedRetries() >= Constants.LOGIN_RETRIES_ALLOWED) {
+			user.setStatus(UserStatus.VERIFICATION_PENDING.name());
+			user.setStatusMessage(Constants.LOGIN_RETRIES_EXAUST_USER_STATUS_MESSAGE);
+		}
+		userRepository.save(user);
+	}
 }
 
   

@@ -8,4 +8,6 @@ import lombok.Data;
 public class RegistrationResponse {
 	private String userStatus;
 	private Long userId;
+	private Integer invalidAttempts;
+
 }

@@ -13,4 +13,11 @@ public interface ServiceRepository extends JpaRepository<ServiceEntity, Long> {
 
     Optional<ServiceEntity> findByIdAndUserIdAndStatus(Long id, Long userId, String status);
     List<ServiceEntity> findByUserId(Long userId);
+    
+    boolean existsByUserIdAndServiceTypeAndStatus(
+            long userId,
+            String serviceType,
+            String status
+    );
+
 }

@@ -22,7 +22,6 @@ public class ServiceServiceImpl implements ServiceService {
         this.repository = repository;
     }
 
-    // ADD SERVICE
     @Override
     @Transactional
     public ServiceEntity addService(ServiceAddRequest request, Long userId) {
@@ -32,19 +31,37 @@ public class ServiceServiceImpl implements ServiceService {
             throw new IllegalArgumentException("Invalid ServiceType");
         }
 
-        ServiceEntity service = ServiceEntity.builder()
-                .userId(userId)
-                .serviceType(request.getServiceType())
-                .serviceCharge(request.getServiceCharge())
-                .status(ServiceConstants.ACTIVE)
-                .createdDate(LocalDateTime.now())
-                .modifiedDate(LocalDateTime.now())
-                .build();
-
-        return repository.save(service);
+//        ServiceEntity service = ServiceEntity.builder()
+//                .userId(userId)
+//                .serviceType(request.getServiceType())
+//                .serviceCharge(request.getServiceCharge())
+//                .status(ServiceConstants.ACTIVE)
+//                .createdDate(LocalDateTime.now())
+//                .modifiedDate(LocalDateTime.now())
+//                .build();
+//
+//        return repository.save(service);
+//    }
+        
+    if (repository.existsByUserIdAndServiceTypeAndStatus(
+            userId,
+            request.getServiceType(),
+            ServiceConstants.ACTIVE)) {
+        throw new IllegalArgumentException("Service already exists");
     }
 
-    // UPDATE SERVICE
+   ServiceEntity service = ServiceEntity.builder()
+           .userId(userId)
+           .serviceType(request.getServiceType())
+           .serviceCharge(request.getServiceCharge())
+           .status(ServiceConstants.ACTIVE)
+           .createdDate(LocalDateTime.now())
+           .modifiedDate(LocalDateTime.now())
+           .build();
+
+   return repository.save(service);
+    }
+
     @Override
     @Transactional
     public ServiceEntity updateService(ServiceUpdateRequest request, Long userId) {
@@ -59,7 +76,6 @@ public class ServiceServiceImpl implements ServiceService {
         return repository.save(service);
     }
 
-    // REMOVE SERVICE
     @Override
     @Transactional
     public void removeService(Long serviceId, Long userId) {

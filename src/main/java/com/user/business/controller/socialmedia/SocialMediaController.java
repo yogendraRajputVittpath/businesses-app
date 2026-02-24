@@ -37,29 +37,20 @@ public class SocialMediaController {
         return ResponseEntity.ok(new ApiResponse<>("SUCCESS", 200, "Record Added Successfully", data));
     }
 
-
-//    @PutMapping("/update")
-//    public ResponseEntity<ApiResponse<?>> updateSocial(
-//            @Valid @RequestBody SocialMediaUpdateRequest request,
-//            @RequestHeader("Authorization") String token) {
-//
-//        SocialMedia data = service.updateSocialMedia(token ,request);
-//        
-//        return ResponseEntity.ok(new ApiResponse<>("SUCCESS", 200, "Record Updated Successfully", data));
-//    }
-
     @PutMapping("/update")
     public ResponseEntity<ApiResponse<?>> updateSocial(
-            @Valid @RequestBody SocialMediaUpdateRequest request) {
+            @Valid @RequestBody SocialMediaUpdateRequest request,
+            @RequestHeader("Authorization") String token) {
 
-        SocialMedia data = service.updateSocialMedia(request);
+        SocialMedia data = service.updateSocialMedia(token,request);
         return ResponseEntity.ok(new ApiResponse<>("SUCCESS", 200, "Record Updated Successfully", data));
     }
-
+    
     @DeleteMapping("/remove/{id}")
-    public ResponseEntity<ApiResponse<?>> removeSocial(@PathVariable Integer id) {
+    public ResponseEntity<ApiResponse<?>> removeSocial(@PathVariable Integer id,
+    		@RequestHeader("Authorization") String token) {
 
-        service.removeSocialMedia(id);
+        service.removeSocialMedia(token,id);
         return ResponseEntity.ok(new ApiResponse<>("SUCCESS", 200, "Account Marked as REMOVED", null));
     }
     

@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+//import com.papertrading.service.util.Constants;
 import com.user.business.service.util.Constants;
 
 import jakarta.validation.constraints.Email;
@@ -14,22 +15,13 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
-public class RegisterUserRequest {
+public class RegisterUserRequestTwo {
 
-	@Pattern(regexp = "^[A-Za-z]+$", message = "Invalid First Name")
-    private String firstName;
-	
-	@Pattern(regexp = "^[A-Za-z]*$", message = "Invalid Last Name")
-    private String lastName; // * represents Optional
-
-    @Email(message = "Invalid email format")
+	@Email(message = "Invalid email format")
     @NotBlank(message = "Email is required")
     private String email;
-
-    @Pattern(regexp = "^[6-9]\\d{9}$", message = "Invalid mobile number")
-    private String phoneNo;
-
-    @Size(min = 6, message = "Password must be at least 6 characters")
+	 
+	@Size(min = 6, message = "Password must be at least 6 characters")
     @NotBlank(message = "Password is required")
     private String password;
 

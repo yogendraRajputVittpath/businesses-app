@@ -7,12 +7,12 @@ import com.user.business.response.ApiResponse;
 
 public interface SocialMediaService {
 
-//    SocialMedia addSocialMedia(SocialMediaAddRequest request);
 	SocialMedia addSocialMedia(String token, SocialMediaAddRequest request);
 
-//    SocialMedia updateSocialMedia(String token, SocialMediaUpdateRequest request);
-	SocialMedia updateSocialMedia(SocialMediaUpdateRequest request);
-    void removeSocialMedia(Integer id);
+	public SocialMedia updateSocialMedia(String token,SocialMediaUpdateRequest request);
+	
+    void removeSocialMedia(String token,Integer id);
     
     ApiResponse<?> getSocialMediaByUserId(String token);
 }
+

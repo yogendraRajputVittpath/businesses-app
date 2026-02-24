@@ -11,6 +11,9 @@ public class Constants {
 	public final static String Incomplete_Information = "Incomplete_Information";
 	public final static String ACCOUNT_VERIFICATION = "AccountVerification";
     public static final int OTP_LENGTH = 6;
+    public static final int LOGIN_RETRIES_ALLOWED = 5;
+    public static final String LOGIN_RETRIES_EXAUST_USER_STATUS_MESSAGE = "Login Failed multiple Times, Reset Passowrd to Continue";
+    
     
     
     /** Regex */
