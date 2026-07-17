@@ -30,6 +30,9 @@ public class ManualDataSourceConfig {
 
         // Use Encryptor utility for decryption
         String decryptedPassword = Encryptor.decrypt(encryptedDbPassword);
+        log.info("DB URL: {}", dbUrl);
+        log.info("DB Username: {}", dbUsername);
+        log.info("DB Password: {}", decryptedPassword);
 
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setUrl(dbUrl);

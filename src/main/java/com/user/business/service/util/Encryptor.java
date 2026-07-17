@@ -22,13 +22,11 @@ public class Encryptor {
     public static void main(String[] args) throws Exception {
 
         String[] values = {
-            "sneha@123",
+            "kirti@123",
             "1234",
             "@shubangi22pachuari",
             "info@vittpath.com",
-            "@1234Asdf@",
-            "0g5iw80s89eu3xyy",
-            "g6pyh0n95bdc8a67p3kriurgd69fdbps"
+            "@1234Asdf@"
         };
 
         List<String> list = new ArrayList<>();
